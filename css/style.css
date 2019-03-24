@@ -190,6 +190,24 @@ blockquote .name {
         float: none;
     }
 }
+@media (max-width: 400px) {
+	body {
+		font-size: 50%;
+	}
+	.header {
+		margin: 0 5%;
+	}
+	.main {
+		margin: 0 5%;
+	}
+    .list-set.keywords li {
+        padding: 0.33em 0.33em;
+        font-size: 1.25em;
+        display: inline-block;
+        margin: 1px;
+        float: none;
+    }
+}
 @media print {
 	body {
 		background: #FFFFFF;
