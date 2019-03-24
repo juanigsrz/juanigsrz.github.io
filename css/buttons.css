@@ -1,0 +1,56 @@
+.buttons-container {
+    width: 100%;
+    text-align: center;
+}
+
+.basicBox {
+  width: 160px;
+  height: 50px;
+  margin: 10px 40px;
+  font-size: 1em;
+  line-height: 50px;
+  text-align: center;
+  position: relative;
+  display: inline-block;
+}
+
+svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+svg rect, svg path, svg polyline {
+  fill: none;
+  stroke: #131313;
+  stroke-width: 0;
+}
+
+.basicBox:hover svg rect, .swiggleBox:hover svg path, .checkBox:hover svg polyline {
+  stroke: #131313;
+}
+
+/* Basic Box */
+svg rect {
+  stroke-width: 0.33;
+  stroke-dasharray: 70, 140;
+  stroke-dashoffset: 165;
+  -webkit-transition: all 0.3s ease-in-out;
+  -moz-transition: all 0.3s ease-in-out;
+  -ms-transition: all 0.3s ease-in-out;
+  -o-transition: all 0.3s ease-in-out;
+}
+.basicBox:hover svg rect {
+  stroke-width: 4;
+  stroke-dasharray: 80, 260;
+  stroke-dashoffset: 90;
+  -webkit-transition: all 0.3s ease-in-out;
+  -moz-transition: all 0.3s ease-in-out;
+  -ms-transition: all 0.3s ease-in-out;
+  -o-transition: all 0.3s ease-in-out;
+}
+
+.button-set{
+	margin: 0 0 0;
+	padding: 0;
+	list-style: none;
+}
