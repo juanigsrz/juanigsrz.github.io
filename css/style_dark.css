@@ -1,15 +1,15 @@
 body {
 	font-size: 62.5%;
     font-family:"Montserrat";
-	color: #131313;
-	background-color: #f7f7f7;
+	color: #f6f6f6;
+	background-color: #161616;
 }
 .main-wrap {
 	max-width: 980px;
 	margin: 0 auto;
 }
 a {
-	color: #131313;
+	color: #f6f6f6;
 	text-decoration: none;
 	-webkit-transition: color 0.175s ease 0.05s;
 	   -moz-transition: color 0.175s ease 0.05s;
@@ -17,7 +17,7 @@ a {
 }
 a:hover,
 a:focus {
-	color: #777777;
+	color: #ffffff;
 	text-decoration: none;
 }
 .header {
@@ -26,14 +26,14 @@ a:focus {
 	margin: 0 10%;
 }
 h1 {
-	color: #131313;
+	color: #f6f6f6;
 	font-size: 3em;
 	margin: 25% 0 0;
 	text-align: center;
 	font-weight: normal;
 }
 h4 {
-	color: #131313;
+	color: #f6f6f6;
 	font-size: 1.25em;
 	margin: 0 0 0em;
 	font-weight: normal;
@@ -50,7 +50,7 @@ h4 {
 .list-set li .fa { min-width: 1em; min-height: 1em; }
 .list-set.keywords { overflow: hidden; }
 .list-set.keywords li {
-    color: #000000;
+    color: #f6f6f6;
 	padding: 0.6em 0.85em;
 	font-size: 2em;
 	display: inline-block;
@@ -58,7 +58,8 @@ h4 {
 	float: none;
 }
 .list-set.keywords li:focus, .list-set.keywords li:hover {
-	color: #777777;
+	color: #f9f9f9;
+    text-shadow: 0 5px 5px rgba(255, 255, 255, .25);
 	text-decoration: none;
 }
 @media (max-width: 780px) {
