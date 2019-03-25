@@ -12,6 +12,7 @@
   text-align: center;
   position: relative;
   display: inline-block;
+  border-radius: 10%;
 }
 
 svg {
