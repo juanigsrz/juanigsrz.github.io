@@ -7,42 +7,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>juanigsrz</title>
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat:400,600">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat">
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" href="css/style.css" />
     <link rel="stylesheet" type="text/css" href="css/buttons.css" />
+    <link rel="stylesheet" type="text/css" href="css/cards.css" />
     <link rel="shortcut icon" href="images/favicon.png">
     <link rel="icon" href="images/favicon.png">
 </head>
 <body>
-    <div class="main-wrap">
-        <header class="header">
-            <h1>Juan Ignacio Suarez</h1>
-            <h4>Computer Science student at <a href="https://www.unr.edu.ar/" target="_blank">UNR</a></h4>
-            <ul class="list-set keywords">
-                <a href="mailto:juanigsrz@gmail.com"><li><i class="fas fa-envelope"></i></li></a>
-                <a href="https://t.me/juanigsrz" target="_blank"><li><i class="fab fa-telegram"></i></li></a>
-                <a href="https://instagram.com/juanigsrz" target="_blank"><li><i class="fab fa-instagram"></i></li></a>
-                <a href="https://linkedin.com/in/juanigsrz" target="_blank"><li><i class="fab fa-linkedin"></i></li></a>
-                <a href="https://github.com/juanigsrz" target="_blank"><li><i class="fab fa-github-square"></i></li></a>
-            </ul>
+    <div class="col-sm-7 vertical-center">
+        <h1>Juan Ignacio Suarez</h1>
+        <h3>Computer Science student at <a href="https://www.unr.edu.ar/" target="_blank">UNR</a></h3>
+        <ul class="list-set keywords">
+            <a href="mailto:juanigsrz@gmail.com"><li><i class="fas fa-envelope"></i></li></a>
+            <a href="https://t.me/juanigsrz" target="_blank"><li><i class="fab fa-telegram"></i></li></a>
+            <a href="https://instagram.com/juanigsrz" target="_blank"><li><i class="fab fa-instagram"></i></li></a>
+            <a href="https://linkedin.com/in/juanigsrz" target="_blank"><li><i class="fab fa-linkedin"></i></li></a>
+            <a href="https://github.com/juanigsrz" target="_blank"><li><i class="fab fa-github-square"></i></li></a>
+        </ul>
+        <div class="buttons-container">
+            <a href="https://drive.google.com/open?id=12Nd7eMz1mxmzJZ8k8pM2LtZjwdaJ9Fan" target="_blank">
+                <div class="basicBox"><h4>Resume</h4>
+                <svg width="160" height="50" viewBox="0 0 160 50" xmlns="http://www.w3.org/2000/svg">
+                    <rect x='0' y='0' fill='none' width='160' height='50'/>
+                </svg>
+                </div>
+            </a>
+            
+            <a href="mailto:juanigsrz@gmail.com">
+                <div class="basicBox"><h4>Let's talk</h4>
+                <svg width="160" height="50" viewBox="0 0 160 50" xmlns="http://www.w3.org/2000/svg">
+                    <rect x='0' y='0' fill='none' width='160' height='50'/>
+                </svg>
+                </div>
+            </a>
+        </div>
+    </div>
+    
+    <div class="col-sm-7"></div>
+    
+    <div class="col-sm-5">
+        <div class="card-container">
+          <div class="card-top qubit-broker">
+            <span class="project-type project-tag">Django</span>
+           <div class="blur"></div>
+          </div>
+          <div class="progress"></div>
+          <div class="content">
+            <div class="title">Cryptocurrency Broker</div>
+                <div class="summary">
+                    Developed a cryptocurrency broker at qubit.com.ar using Django,
+                    including a balance system to keep track of coins,
+                    cron jobs to scrape data off the web and to interact with exchanges' APIs,
+                    and a global cache system.
+                </div>
             <div class="buttons-container">
-                <a href="https://drive.google.com/open?id=12Nd7eMz1mxmzJZ8k8pM2LtZjwdaJ9Fan" target="_blank">
-                    <div class="basicBox"><h4>Resume</h4>
-                    <svg width="160" height="50" viewBox="0 0 160 50" xmlns="http://www.w3.org/2000/svg">
-                        <rect x='0' y='0' fill='none' width='160' height='50'/>
-                    </svg>
-                    </div>
-                </a>
-                
-                <a href="mailto:juanigsrz@gmail.com">
-                    <div class="basicBox"><h4>Let's talk</h4>
-                    <svg width="160" height="50" viewBox="0 0 160 50" xmlns="http://www.w3.org/2000/svg">
-                        <rect x='0' y='0' fill='none' width='160' height='50'/>
-                    </svg>
-                    </div>
-                </a>
+                <h5><a href="https://www.qubit.com.ar/" target="_blank"><i class="fas fa-globe"></i> Website</a></h5>
             </div>
-        </header>
+          </div>
+        </div>
+        
+        <div class="card-container">
+          <div class="card-top distributed-network">
+            <span class="project-type project-tag">Erlang</span>
+           <div class="blur"></div>
+          </div>
+          <div class="progress"></div>
+          <div class="content">
+            <div class="title">Distributed Game Server</div>
+                <div class="summary">
+                    Contributed to the design and testing, and to the implementation of communication and game managers.
+                    With a microservices approach, you can plug-in new nodes and replace many components, such as the games being played.
+                </div>
+            <div class="buttons-container">
+                <h5><a href="https://github.com/RomanCastellarin/TP-SO-I" target="_blank"><i class="fab fa-github-square"></i> GitHub</a></h5>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-container">
+          <div class="card-top create">
+            <span class="project-type project-tag">MIPS / C++</span>
+           <div class="blur"></div>
+          </div>
+          <div class="progress"></div>
+          <div class="content">
+            <div class="title">MIPS Virtual Machine and Compiler</div>
+                <div class="summary">Built the lexer and compiler, and collaborated on the overall project's design and the instructions' implementation on the virtual machine.</div>
+            <div class="buttons-container">
+                <h5><a href="https://github.com/RomanCastellarin/MIPS-VM" target="_blank"><i class="fab fa-github-square"></i> GitHub</a></h5>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-container">
+          <div class="card-top learn">
+            <span class="project-type project-tag">C++</span>
+           <div class="blur"></div>
+          </div>
+          <div class="progress"></div>
+          <div class="content">
+            <div class="title">OP Deque</div>
+                <div class="summary">Working on a new deque data structure that supports amortized O(f) queries over all its elements.</div>
+            <div class="buttons-container">
+                <h5><a href="https://github.com/juanigsrz/op_deque" target="_blank"><i class="fab fa-github-square"></i> GitHub</a></h5>
+            </div>
+          </div>
+        </div>
     </div>
 </body>
 </html>

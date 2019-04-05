@@ -1,47 +1,49 @@
 body {
-	font-size: 62.5%;
-    font-family:"Montserrat";
-	color: #131313;
-	background-color: #f7f7f7;
+    font-family: "Montserrat";
+	color: #121212;
+	background-color: #f9f9f9;
 }
-.main-wrap {
-	max-width: 980px;
-	margin: 0 auto;
+h1 {
+	color: #121212;
+    font-size: 5em;
+    margin: 0;
+	font-weight: normal;
+}
+h3 {
+	color: #121212;
+    font-size: 2.5em;
+    margin: 0;
+	font-weight: normal;
+}
+h4 {
+	color: #121212;
+    font-size: 1.5em;
+    margin: 0;
+	font-weight: normal;
+}
+h5 {
+    color: #121212;
+    font-size: 1em;
+    margin: 0;
+	font-weight: normal;
 }
 a {
-	color: #131313;
+	color: #121212;
 	text-decoration: none;
 	-webkit-transition: color 0.175s ease 0.05s;
 	   -moz-transition: color 0.175s ease 0.05s;
-	        transition: color 0.175s ease 0.05s;
+        -ms-transition: color 0.175s ease 0.05s;
+         -o-transition: color 0.175s ease 0.05s;
 }
 a:hover,
 a:focus {
 	color: #777777;
 	text-decoration: none;
 }
-.header {
-	text-align: center;
-	font-size: 2em;
-	margin: 0 10%;
-}
-h1 {
-	color: #131313;
-	font-size: 3em;
-	margin: 25% 0 0;
-	text-align: center;
-	font-weight: normal;
-}
-h4 {
-	color: #131313;
-	font-size: 1.25em;
-	margin: 0 0 0em;
-	font-weight: normal;
-}
 
 .list-set,
 .list-set li {
-	margin: 1em 0 0;
+	margin: 0;
 	padding: 0;
 	list-style: none;
 }
@@ -51,8 +53,8 @@ h4 {
 .list-set.keywords { overflow: hidden; }
 .list-set.keywords li {
     color: #000000;
-	padding: 0.6em 0.85em;
-	font-size: 2em;
+	padding: 1em 1em;
+	font-size: 2.5em;
 	display: inline-block;
 	margin: 2px;
 	float: none;
@@ -60,41 +62,16 @@ h4 {
 .list-set.keywords li:focus, .list-set.keywords li:hover {
 	color: #777777;
 	text-decoration: none;
+    -webkit-transition: color 0.175s ease 0.05s;
+	   -moz-transition: color 0.175s ease 0.05s;
+	        transition: color 0.175s ease 0.05s;
 }
-@media (max-width: 780px) {
-	body { font-size: 50%; }
-	.header { margin: 0 5%; }
-	.main { margin: 0 5%; }
-    .list-set.keywords li {
-        padding: 0.6em 0.66em;
-        font-size: 1.75em;
-        display: inline-block;
-        margin: 1px;
-        float: none;
-    }
-}
-@media (max-width: 552px) {
-	body { font-size: 40%; }
-	.header { margin: 0 5%; }
-	.main { margin: 0 5%; }
-    .list-set.keywords li {
-        padding: 0.5em 0.5em;
-        font-size: 2em;
-        display: inline-block;
-        margin: 1px;
-        float: none;
-    }
-}
-@media (max-width: 444px) {
-	body { font-size: 35%; }
-	.header { margin: 0 5%; }
-	.main { margin: 0 5%; }
-    h1 { font-size: 2em; }
-    .list-set.keywords li {
-        padding: 0.5em 0.5em;
-        font-size: 2em;
-        display: inline-block;
-        margin: 1px;
-        float: none;
-    }
+
+.vertical-center {
+  min-height: 100vh;
+  display: flex;
+  position: fixed; /* Remove this on media queries for small devices */
+  flex-direction: column;
+  justify-content: center; 
+  align-items: center;
 }
