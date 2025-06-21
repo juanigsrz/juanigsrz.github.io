@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Trade Analyzer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --background-color: #e9ecef;
+            --card-background: #ffffff;
+            --border-color: #dee2e6;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--dark-color);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-weight: 700;
+            font-size: 2.5rem;
+        }
+
+        .controls-card {
+            background: var(--card-background);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        input[type="file"], input[type="text"], button {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        input[type="file"] {
+            cursor: pointer;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #results-container {
+            margin-top: 2rem;
+        }
+
+        .game-card {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .game-card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .game-card-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
+        .game-card-body {
+            padding: 1.5rem;
+        }
+
+        .trade-info {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-top: 0;
+        }
+
+        .traded { color: var(--success-color); }
+        .not-traded { color: var(--danger-color); }
+
+        .collapsible summary {
+            cursor: pointer;
+            font-weight: 500;
+            padding: 0.5rem;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+            list-style-position: inside;
+        }
+
+        .collapsible summary:hover {
+            background-color: var(--light-color);
+        }
+
+        .collapsible[open] > summary {
+            margin-bottom: 1rem;
+        }
+
+        .wishlist-content h5 {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.25rem;
+            display: inline-block;
+        }
+
+        .wishlist-content ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin: 0;
+        }
+
+        .wishlist-content li {
+            background: var(--light-color);
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .wishlist-content li:last-child {
+            border-bottom: none;
+            border-radius: 0 0 5px 5px;
+        }
+        .wishlist-content li:first-child {
+             border-radius: 5px 5px 0 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Math Trade Analyzer</h1>
+            <p>Upload your trade files and enter a username to see the results.</p>
+        </div>
+
+        <div class="controls-card">
+            <div class="input-group">
+                <label for="wantsFile">Upload wants.txt:</label>
+                <input type="file" id="wantsFile" accept=".txt">
+            </div>
+
+            <div class="input-group">
+                <label for="resultsFile">Upload results.txt:</label>
+                <input type="file" id="resultsFile" accept=".txt">
+            </div>
+
+            <div class="input-group">
+                <label for="username">Enter Username:</label>
+                <input type="text" id="username" placeholder="e.g., ALEJANDRAPINI---ALEJANDRA_PINI">
+            </div>
+
+            <button onclick="analyze()">Analyze Trades</button>
+        </div>
+
+        <div id="results-container"></div>
+    </div>
+
+    <script>
+        async function analyze() {
+            const wantsFileInput = document.getElementById('wantsFile');
+            const resultsFileInput = document.getElementById('resultsFile');
+            const usernameInput = document.getElementById('username');
+            const resultsDiv = document.getElementById('results-container');
+
+            resultsDiv.innerHTML = '<p>Analyzing...</p>';
+
+            if (!wantsFileInput.files[0] || !resultsFileInput.files[0] || !usernameInput.value) {
+                resultsDiv.innerHTML = '<p style="color: var(--danger-color);">Please provide all inputs.</p>';
+                return;
+            }
+
+            try {
+                const wantsText = await wantsFileInput.files[0].text();
+                const resultsText = await resultsFileInput.files[0].text();
+                const username = usernameInput.value.trim();
+
+                const { items, wishlists, dummyItems } = parseWants(wantsText);
+                const expandedWishlists = expandDummyItems(wishlists, dummyItems);
+                const trades = parseResults(resultsText);
+
+                const userItems = Object.entries(items)
+                    .filter(([_, itemData]) => itemData.user === username)
+                    .map(([id, data]) => ({ id, ...data }));
+
+                if (userItems.length === 0) {
+                    resultsDiv.innerHTML = `<p>No items found for user: <strong>${username}</strong></p>`;
+                    return;
+                }
+
+                let html = `<h2>Results for ${username}</h2>`;
+
+                for (const myItem of userItems) {
+                    html += `
+                        <div class="game-card">
+                            <div class="game-card-header">
+                                <h3>${myItem.id}: ${myItem.name}</h3>
+                            </div>
+                            <div class="game-card-body">
+                    `;
+
+                    const tradeResult = trades[myItem.id];
+                    if (tradeResult) {
+                        const tradedForItem = items[tradeResult];
+                        html += `<p class="trade-info traded"><strong>Traded for:</strong> ${tradeResult} - ${tradedForItem ? tradedForItem.name : 'Unknown Item'}</p>`;
+                    } else {
+                        html += `<p class="trade-info not-traded"><strong>Not Traded</strong></p>`;
+                    }
+
+                    const wishesForMyItem = findWishesForItem(myItem.id, expandedWishlists);
+                    const wishedAndGot = [];
+                    const wishedAndGotSomethingElse = [];
+                    const wishedAndDidntTrade = [];
+
+                    for (const wish of wishesForMyItem) {
+                        const wishingItemTrade = trades[wish.offeredId];
+                        if (wishingItemTrade === myItem.id) {
+                            wishedAndGot.push(wish.offeredId);
+                        } else if (wishingItemTrade) {
+                             wishedAndGotSomethingElse.push({ id: wish.offeredId, got: wishingItemTrade });
+                        } else {
+                            wishedAndDidntTrade.push(wish.offeredId);
+                        }
+                    }
+
+                    html += `
+                        <details class="collapsible">
+                            <summary>View Wishlist Analysis (${wishesForMyItem.length} wishes)</summary>
+                            <div class="wishlist-content">
+                    `;
+                    
+                    if (wishesForMyItem.length > 0) {
+                        if (wishedAndGot.length > 0) {
+                            html += '<h5>Wished for this and got it:</h5><ul>';
+                            wishedAndGot.forEach(id => {
+                               html += `<li><strong>${id}</strong> - ${items[id] ? items[id].name : 'Unknown'}</li>`;
+                            });
+                            html += '</ul>';
+                        }
+                        if (wishedAndGotSomethingElse.length > 0) {
+                            html += '<h5>Wished for this but got something else:</h5><ul>';
+                            wishedAndGotSomethingElse.forEach(trade => {
+                                html += `<li><strong>${trade.id}</strong> - ${items[trade.id] ? items[trade.id].name : 'Unknown'} (got <strong>${trade.got}</strong> - ${items[trade.got] ? items[trade.got].name : 'Unknown'})</li>`;
+                            });
+                            html += '</ul>';
+                        }
+                        if (wishedAndDidntTrade.length > 0) {
+                            html += '<h5>Wished for this but didn\'t trade:</h5><ul>';
+                            wishedAndDidntTrade.forEach(id => {
+                                html += `<li><strong>${id}</strong> - ${items[id] ? items[id].name : 'Unknown'}</li>`;
+                            });
+                            html += '</ul>';
+                        }
+                    } else {
+                        html += '<p>No one wished for this item.</p>';
+                    }
+
+                    html += `</div></details></div></div>`;
+                }
+                resultsDiv.innerHTML = html;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p style="color: var(--danger-color);">An error occurred: ${error.message}</p>`;
+                console.error(error);
+            }
+        }
+
+        function parseWants(text) {
+            const lines = text.split('\n');
+            const items = {};
+            const wishlists = [];
+            const dummyItems = {};
+            const itemRegex = /(\d{9})\s==>\s\d+\.\s"(.+)"\s\(from\s(.+)\)/;
+            const wishlistRegex = /\((.+)\)\s([%\d]+)\s:\s(.*)/;
+
+            for (const line of lines) {
+                if (line.startsWith('#')) continue;
+                const itemMatch = line.match(itemRegex);
+                if (itemMatch) {
+                    const [_, id, name, user] = itemMatch;
+                    items[id] = { name: name.trim(), user: user.trim() };
+                    continue;
+                }
+                const wishlistMatch = line.match(wishlistRegex);
+                if (wishlistMatch) {
+                    const [_, user, offeredId, wantedStr] = wishlistMatch;
+                    const wanted = wantedStr.trim().split(/\s+/).filter(Boolean);
+                    const wish = { user: user.trim(), offeredId: offeredId.trim(), wanted };
+                    if (offeredId.startsWith('%')) {
+                        dummyItems[offeredId] = wanted;
+                    } else {
+                        wishlists.push(wish);
+                    }
+                }
+            }
+            return { items, wishlists, dummyItems };
+        }
+
+        function expandDummyItems(wishlists, dummyItems) {
+            return wishlists.map(wish => {
+                const expandedWanted = wish.wanted.flatMap(id => id.startsWith('%') ? (dummyItems[id] || []) : [id]);
+                return { ...wish, wanted: expandedWanted };
+            });
+        }
+
+        function parseResults(text) {
+            const lines = text.split('\n');
+            const trades = {};
+            // Corrected, non-greedy regex to handle complex lines
+            const tradeRegex = /^\((.+?)\)\s(\d{9})\s+receives\s+\((.+?)\)\s(\d{9})/;
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                const match = trimmedLine.match(tradeRegex);
+                if (match) {
+                    const itemGiven = match[2];
+                    const itemReceived = match[4];
+                    trades[itemGiven] = itemReceived;
+                }
+            }
+            return trades;
+        }
+
+        function findWishesForItem(itemId, wishlists) {
+            return wishlists.filter(wish => wish.wanted.includes(itemId));
+        }
+    </script>
+</body>
+</html>
