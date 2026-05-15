@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ATLAS / Property Survey</title>
+<link rel="shortcut icon" href="../images/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+    --ink: #0b0e14;
+    --ink-2: #11151d;
+    --ink-3: #1a212c;
+    --line: #2a3441;
+    --line-strong: #3b4756;
+    --bone: #ece5d3;
+    --bone-dim: #b8b09a;
+    --bone-muted: #797360;
+    --amber: #e6a341;
+    --amber-soft: #b8842e;
+    --signal: #d6553a;
+    --aqua: #4cb8a6;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var(--bone);font-family:"IBM Plex Sans",sans-serif;font-weight:400;-webkit-font-smoothing:antialiased}
+
+/* faint film-grain overlay */
+body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:30;opacity:.06;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* vignette */
+body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:1;
+    background:radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%);
+}
+
+#globe-canvas{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab;z-index:0}
+#globe-canvas.placing{cursor:crosshair}
+#globe-canvas:active{cursor:grabbing}
+
+/* ========== HUD frame ========== */
+.frame{position:fixed;inset:0;pointer-events:none;z-index:4}
+.frame .corner{position:absolute;width:46px;height:46px;border-color:var(--bone-dim)}
+.frame .tl{top:22px;left:22px;border-top:1px solid;border-left:1px solid}
+.frame .tr{top:22px;right:22px;border-top:1px solid;border-right:1px solid}
+.frame .bl{bottom:22px;left:22px;border-bottom:1px solid;border-left:1px solid}
+.frame .br{bottom:22px;right:22px;border-bottom:1px solid;border-right:1px solid}
+
+/* edge tick rulers */
+.frame .ticks{position:absolute;display:flex;justify-content:space-between;color:var(--bone-muted)}
+.frame .ticks-top{top:22px;left:80px;right:80px;height:10px}
+.frame .ticks-bottom{bottom:22px;left:80px;right:80px;height:10px}
+.frame .ticks span{display:block;width:1px;background:var(--line-strong);height:6px;align-self:flex-start}
+.frame .ticks span:nth-child(5n+1){height:10px;background:var(--bone-dim)}
+.frame .ticks-bottom span{align-self:flex-end}
+
+/* ========== Header strip ========== */
+.head{
+    position:fixed;top:34px;left:80px;right:80px;z-index:6;
+    display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none;
+}
+.head .left{display:flex;align-items:baseline;gap:18px;pointer-events:auto}
+.head .mark{
+    font-family:"Instrument Serif",serif;font-size:32px;line-height:.9;letter-spacing:.02em;
+    color:var(--bone);
+}
+.head .mark em{font-style:italic;color:var(--amber)}
+.head .sub{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--bone-muted);padding-bottom:4px;
+}
+.head .right{
+    pointer-events:auto;
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--bone-muted);text-align:right;line-height:1.6;
+}
+.head .right b{color:var(--bone-dim);font-weight:500}
+.head .right .live{color:var(--amber)}
+.head .right .live::before{content:"●";margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ========== Toolbar ========== */
+.toolbar{
+    position:fixed;left:80px;bottom:60px;z-index:8;pointer-events:auto;
+    display:flex;flex-direction:column;gap:0;
+    border:1px solid var(--line);background:rgba(11,14,20,.85);
+    backdrop-filter:blur(10px);
+    min-width:260px;
+}
+.toolbar .tb-head{
+    padding:10px 14px;border-bottom:1px solid var(--line);
+    font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--bone-muted);display:flex;justify-content:space-between;
+}
+.tb-btn{
+    appearance:none;background:transparent;border:none;border-bottom:1px solid var(--line);
+    color:var(--bone);
+    padding:14px 16px;display:flex;align-items:center;gap:14px;
+    font-family:"IBM Plex Sans",sans-serif;font-size:13px;
+    cursor:pointer;width:100%;text-align:left;
+    transition:background .15s,color .15s;
+}
+.tb-btn:last-child{border-bottom:none}
+.tb-btn:hover{background:rgba(230,163,65,.06);color:var(--bone)}
+.tb-btn .glyph{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--amber);
+    width:18px;text-align:center;letter-spacing:0;
+}
+.tb-btn .label{flex:1}
+.tb-btn .kbd{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--bone-muted);
+    border:1px solid var(--line);padding:1px 5px;letter-spacing:.05em;
+}
+.tb-btn.active{background:rgba(230,163,65,.12);color:var(--amber)}
+.tb-btn.active .glyph{color:var(--amber)}
+
+/* counts strip */
+.counts{
+    position:fixed;right:80px;bottom:60px;z-index:8;
+    display:flex;gap:0;border:1px solid var(--line);background:rgba(11,14,20,.85);backdrop-filter:blur(10px);
+}
+.counts .cell{padding:14px 22px;border-right:1px solid var(--line);min-width:110px}
+.counts .cell:last-child{border-right:none}
+.counts .cell .v{
+    font-family:"Instrument Serif",serif;font-size:32px;line-height:1;color:var(--bone);
+}
+.counts .cell .l{
+    font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.3em;text-transform:uppercase;
+    color:var(--bone-muted);margin-top:6px;
+}
+
+/* coords readout under cursor */
+.coords{
+    position:fixed;z-index:7;pointer-events:none;
+    font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--amber);
+    letter-spacing:.18em;
+    background:rgba(11,14,20,.85);border:1px solid var(--line);
+    padding:6px 10px;white-space:nowrap;transform:translate(14px,14px);
+    opacity:0;transition:opacity .15s;
+}
+.coords.visible{opacity:1}
+
+/* hint banner */
+.hint{
+    position:fixed;top:90px;left:50%;transform:translateX(-50%);z-index:9;
+    background:rgba(11,14,20,.92);border:1px solid var(--amber);
+    padding:10px 18px;
+    font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--amber);
+    display:flex;align-items:center;gap:18px;
+}
+.hint::before{
+    content:"";width:6px;height:6px;background:var(--amber);
+    animation:pulse 1.4s infinite;
+}
+.hint .esc{color:var(--bone-muted);font-size:10px;letter-spacing:.16em}
+
+/* ========== Modals ========== */
+.backdrop{
+    position:fixed;inset:0;z-index:20;background:rgba(5,7,11,.78);backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;
+}
+.modal{
+    background:var(--ink-2);border:1px solid var(--line-strong);
+    width:520px;max-width:92vw;max-height:88vh;overflow-y:auto;
+    position:relative;
+}
+.modal::before,.modal::after{
+    content:"";position:absolute;width:14px;height:14px;border-color:var(--amber);
+}
+.modal::before{top:-1px;left:-1px;border-top:2px solid;border-left:2px solid}
+.modal::after{bottom:-1px;right:-1px;border-bottom:2px solid;border-right:2px solid}
+.modal-head{
+    padding:20px 26px 16px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:baseline;
+}
+.modal-head h2{
+    font-family:"Instrument Serif",serif;font-weight:400;font-size:26px;line-height:1;
+}
+.modal-head h2 em{font-style:italic;color:var(--amber)}
+.modal-head .tag{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--bone-muted);
+}
+.modal-body{padding:20px 26px 6px}
+.modal label{
+    display:block;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--bone-muted);margin:14px 0 6px;
+}
+.modal input[type=text],
+.modal input[type=number],
+.modal select,
+.modal textarea{
+    width:100%;background:var(--ink);color:var(--bone);
+    border:none;border-bottom:1px solid var(--line-strong);
+    padding:8px 0;font-family:"IBM Plex Mono",monospace;font-size:14px;
+    outline:none;transition:border-color .15s;
+}
+.modal input:focus,.modal select:focus,.modal textarea:focus{border-bottom-color:var(--amber)}
+.modal textarea{resize:vertical;min-height:64px;font-family:"IBM Plex Sans",sans-serif;font-size:13px}
+.modal select{appearance:none;cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,var(--amber) 50%),linear-gradient(135deg,var(--amber) 50%,transparent 50%);background-position:calc(100% - 12px) center,calc(100% - 7px) center;background-size:5px 5px;background-repeat:no-repeat}
+
+.row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+
+.amm-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-top:4px}
+.amm-grid label{
+    display:flex;align-items:center;gap:10px;margin:0;cursor:pointer;
+    font-family:"IBM Plex Sans",sans-serif;font-size:13px;text-transform:none;letter-spacing:0;
+    color:var(--bone-dim);padding:6px 0;border-bottom:1px dashed var(--line);
+}
+.amm-grid input{appearance:none;width:14px;height:14px;border:1px solid var(--line-strong);position:relative;cursor:pointer;flex-shrink:0}
+.amm-grid input:checked{border-color:var(--amber);background:var(--amber)}
+.amm-grid input:checked::after{content:"";position:absolute;inset:2px;background:var(--ink);clip-path:polygon(14% 47%, 0 60%, 39% 100%, 100% 22%, 86% 9%, 39% 73%)}
+.amm-grid label:has(input:checked){color:var(--bone)}
+
+.amm-add{display:flex;gap:0;margin-top:10px;border:1px solid var(--line-strong)}
+.amm-add input{border:none;padding:8px 12px;background:transparent;color:var(--bone);font-family:"IBM Plex Mono",monospace;font-size:12px;width:100%;outline:none}
+.amm-add button{
+    background:var(--ink-3);color:var(--amber);border:none;border-left:1px solid var(--line-strong);
+    padding:0 16px;cursor:pointer;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+}
+.amm-add button:hover{background:var(--amber);color:var(--ink)}
+
+.modal-foot{
+    padding:18px 26px 22px;border-top:1px solid var(--line);margin-top:18px;
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+}
+.coord-readout{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;color:var(--bone-muted);
+}
+.coord-readout b{color:var(--amber);font-weight:500;margin:0 4px}
+.actions{display:flex;gap:10px}
+.btn{
+    appearance:none;border:1px solid var(--line-strong);background:transparent;color:var(--bone);
+    padding:9px 22px;cursor:pointer;
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+    transition:all .15s;
+}
+.btn:hover{border-color:var(--bone-dim)}
+.btn.primary{background:var(--amber);border-color:var(--amber);color:var(--ink)}
+.btn.primary:hover{background:var(--bone);border-color:var(--bone)}
+.btn.danger{background:var(--signal);border-color:var(--signal);color:var(--bone)}
+.btn.danger:hover{filter:brightness(1.1)}
+
+/* ========== Floating popups ========== */
+.popup{
+    position:fixed;z-index:15;
+    background:var(--ink-2);border:1px solid var(--line-strong);
+    min-width:280px;max-width:340px;
+}
+.popup::before{
+    content:"";position:absolute;top:-1px;left:-1px;width:12px;height:12px;
+    border-top:2px solid var(--amber);border-left:2px solid var(--amber);
+}
+.popup-head{
+    padding:14px 18px 10px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:baseline;
+}
+.popup-head h3{
+    font-family:"Instrument Serif",serif;font-weight:400;font-size:20px;
+}
+.popup-head h3 em{font-style:italic;color:var(--amber)}
+.popup-head .id{
+    font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.24em;color:var(--bone-muted);
+}
+.popup-body{padding:12px 18px 16px}
+.popup .field{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:5px 0;border-bottom:1px dashed var(--line);
+    font-family:"IBM Plex Mono",monospace;font-size:12px;
+}
+.popup .field:last-child{border-bottom:none}
+.popup .field .k{color:var(--bone-muted);font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+.popup .field .v{color:var(--bone);font-feature-settings:"tnum"}
+.popup .desc{
+    margin-top:10px;padding-top:10px;border-top:1px solid var(--line);
+    font-family:"IBM Plex Sans",sans-serif;font-size:13px;color:var(--bone-dim);
+    font-style:italic;line-height:1.5;
+}
+.popup .amm{
+    margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;
+}
+.popup .amm span{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;
+    border:1px solid var(--line-strong);padding:3px 8px;color:var(--bone-dim);
+}
+.popup-foot{padding:0 18px 14px;display:flex;justify-content:flex-end;gap:8px}
+
+/* on-globe marker labels */
+.marker-labels{position:fixed;inset:0;pointer-events:none;z-index:6}
+.marker-label{
+    position:absolute;transform:translate(14px,-50%);
+    font-family:"IBM Plex Mono",monospace;font-size:10px;
+    color:var(--aqua);
+    background:rgba(11,14,20,.86);border:1px solid rgba(76,184,166,.5);
+    padding:4px 9px;letter-spacing:.06em;white-space:nowrap;
+    transition:opacity .12s;
+    display:flex;align-items:center;gap:10px;
+}
+.marker-label::before{
+    content:"";position:absolute;left:-14px;top:50%;width:14px;height:1px;
+    background:rgba(76,184,166,.5);
+}
+.marker-label .sep{color:var(--line-strong)}
+.marker-label .r{color:var(--bone)}
+.marker-label.behind{opacity:0}
+.marker-label.dragging{
+    border-color:var(--amber);color:var(--amber);
+    background:rgba(11,14,20,.95);
+}
+.marker-label.dragging::before{background:var(--amber)}
+.marker-label.dragging .r{color:var(--bone)}
+
+.hidden{display:none !important}
+
+@media (max-width:760px){
+    .head{left:30px;right:30px;top:24px}
+    .frame .corner{display:none}
+    .frame .ticks-top,.frame .ticks-bottom{display:none}
+    .toolbar{left:16px;right:16px;bottom:16px;min-width:0}
+    .counts{display:none}
+    .head .right{display:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="globe-canvas"></canvas>
+
+<div class="marker-labels" id="marker-labels"></div>
+
+<div class="frame">
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+    <div class="ticks ticks-top" id="ticks-top"></div>
+    <div class="ticks ticks-bottom" id="ticks-bottom"></div>
+</div>
+
+<header class="head">
+    <div class="left">
+        <div class="mark">ATLAS<em>&thinsp;/&thinsp;</em>Property Survey</div>
+        <div class="sub">Sector 01 · Terrestrial Datum</div>
+    </div>
+    <div class="right">
+        <div><b>BUILD</b> &nbsp; <span id="build-id">A-12.04.E</span></div>
+        <div class="live">TRANSMITTING</div>
+    </div>
+</header>
+
+<aside class="toolbar">
+    <div class="tb-head"><span>Instruments</span><span id="tb-time">00:00:00</span></div>
+    <button class="tb-btn" id="btn-add-property"><span class="glyph">+</span><span class="label">Mark Property</span><span class="kbd">P</span></button>
+    <button class="tb-btn" id="btn-add-marker"><span class="glyph">◯</span><span class="label">Place Radius Marker</span><span class="kbd">R</span></button>
+    <button class="tb-btn" id="btn-upload"><span class="glyph">↑</span><span class="label">Upload Survey JSON</span><span class="kbd">U</span></button>
+    <input type="file" id="file-input" accept=".json,application/json" hidden />
+    <button class="tb-btn" id="btn-export"><span class="glyph">↓</span><span class="label">Export Survey JSON</span><span class="kbd">E</span></button>
+</aside>
+
+<div class="counts">
+    <div class="cell"><div class="v" id="cnt-props">0</div><div class="l">Properties</div></div>
+    <div class="cell"><div class="v" id="cnt-markers">0</div><div class="l">Markers</div></div>
+</div>
+
+<div class="coords" id="coords"></div>
+
+<div class="hint hidden" id="hint">
+    <span id="hint-text">Click a point on the globe</span>
+    <span class="esc">ESC · cancel</span>
+</div>
+
+<!-- Property form -->
+<div class="backdrop hidden" id="property-form">
+    <div class="modal">
+        <div class="modal-head">
+            <h2>Mark<em> Property</em></h2>
+            <span class="tag">Form&nbsp;01-P</span>
+        </div>
+        <div class="modal-body">
+            <div class="row-3">
+                <div><label>Square ft</label><input type="number" id="f-sqft" min="0" value="1200" /></div>
+                <div><label>Rooms</label><input type="number" id="f-rooms" min="0" value="3" /></div>
+                <div><label>Bathrooms</label><input type="number" id="f-baths" min="0" value="2" /></div>
+            </div>
+            <div class="row">
+                <div><label>Price (USD)</label><input type="number" id="f-price" min="0" value="250000" /></div>
+                <div><label>Lighting</label>
+                    <select id="f-lighting">
+                        <option value="low">low</option>
+                        <option value="medium" selected>medium</option>
+                        <option value="high">high</option>
+                    </select>
+                </div>
+            </div>
+            <label>Description</label>
+            <textarea id="f-desc" placeholder="Notes, condition, surroundings..."></textarea>
+
+            <label>Amenities</label>
+            <div class="amm-grid" id="f-ammenities">
+                <label><input type="checkbox" data-amm="yard" /> Yard</label>
+                <label><input type="checkbox" data-amm="garage" /> Garage</label>
+                <label><input type="checkbox" data-amm="pool" /> Pool</label>
+                <label><input type="checkbox" data-amm="gym" /> Gym</label>
+                <label><input type="checkbox" data-amm="balcony" /> Balcony</label>
+                <label><input type="checkbox" data-amm="parking" /> Parking</label>
+            </div>
+            <div class="amm-add">
+                <input type="text" id="amm-new" placeholder="custom amenity..." />
+                <button id="amm-add-btn">Add</button>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <div class="coord-readout">LAT<b id="prop-lat">—</b>LNG<b id="prop-lng">—</b></div>
+            <div class="actions">
+                <button class="btn" id="prop-cancel">Cancel</button>
+                <button class="btn primary" id="prop-save">Commit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Marker form -->
+<div class="backdrop hidden" id="marker-form">
+    <div class="modal" style="width:380px">
+        <div class="modal-head">
+            <h2>Radius<em> Marker</em></h2>
+            <span class="tag">Form&nbsp;02-R</span>
+        </div>
+        <div class="modal-body">
+            <label>Radius (kilometers)</label>
+            <input type="number" id="m-radius" min="1" max="20000" value="250" />
+        </div>
+        <div class="modal-foot">
+            <div class="coord-readout">LAT<b id="m-lat">—</b>LNG<b id="m-lng">—</b></div>
+            <div class="actions">
+                <button class="btn" id="marker-cancel">Cancel</button>
+                <button class="btn primary" id="marker-save">Place</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Property details -->
+<div class="popup hidden" id="property-details">
+    <div class="popup-head">
+        <h3>Property<em> Brief</em></h3>
+        <span class="id" id="prop-id">P-0001</span>
+    </div>
+    <div class="popup-body" id="prop-body"></div>
+</div>
+
+<!-- Marker delete -->
+<div class="popup hidden" id="marker-popup">
+    <div class="popup-head">
+        <h3>Radius<em> Marker</em></h3>
+        <span class="id" id="mk-id">M-0001</span>
+    </div>
+    <div class="popup-body">
+        <div class="field"><span class="k">Radius</span><span class="v" id="mk-radius"></span></div>
+        <div class="field"><span class="k">Center</span><span class="v" id="mk-center"></span></div>
+        <div class="field"><span class="k">Area</span><span class="v" id="mk-area"></span></div>
+    </div>
+    <div class="popup-foot">
+        <button class="btn danger" id="marker-delete-btn">Delete</button>
+    </div>
+</div>
+
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const R = 1;                       // sphere radius (scene units)
+const EARTH_KM = 6371;             // for radius conversion
+
+// ---------- State ----------
+const state = {
+    properties: [],
+    markers: [],
+    mode: null,
+    pendingLocation: null,
+    pid: 0,
+    mid: 0,
+};
+
+// ---------- Three.js scene ----------
+const canvas = document.getElementById('globe-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0e14);
+scene.fog = new THREE.Fog(0x0b0e14, 5, 12);
+
+const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.01, 100);
+camera.position.set(0.6, 0.7, 3.4);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.minDistance = 1.35;
+controls.maxDistance = 6;
+controls.rotateSpeed = 0.45;
+controls.zoomSpeed = 0.7;
+controls.enablePan = false;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const sun = new THREE.DirectionalLight(0xffe9c4, 1.1);
+sun.position.set(4, 2, 4);
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x6b88aa, 0.35);
+fill.position.set(-3, -1, -2);
+scene.add(fill);
+
+// Stars
+(function stars(){
+    const N = 1800;
+    const pos = new Float32Array(N * 3);
+    const size = new Float32Array(N);
+    for (let i = 0; i < N; i++){
+        const r = 25 + Math.random()*40;
+        const t = Math.random()*Math.PI*2;
+        const p = Math.acos(2*Math.random()-1);
+        pos[i*3]   = r*Math.sin(p)*Math.cos(t);
+        pos[i*3+1] = r*Math.cos(p);
+        pos[i*3+2] = r*Math.sin(p)*Math.sin(t);
+        size[i] = Math.random()*1.6 + 0.4;
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    const m = new THREE.PointsMaterial({ color:0xece5d3, size:0.025, sizeAttenuation:true, transparent:true, opacity:0.85 });
+    scene.add(new THREE.Points(g, m));
+})();
+
+// ---------- Globe ----------
+const loader = new THREE.TextureLoader();
+loader.setCrossOrigin('anonymous');
+const TEX = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/';
+const earthTex   = loader.load(TEX + 'earth_atmos_2048.jpg', t => { t.colorSpace = THREE.SRGBColorSpace; });
+const specularTex = loader.load(TEX + 'earth_specular_2048.jpg');
+const normalTex   = loader.load(TEX + 'earth_normal_2048.jpg');
+
+const globeMat = new THREE.MeshPhongMaterial({
+    map: earthTex,
+    specularMap: specularTex,
+    normalMap: normalTex,
+    specular: new THREE.Color(0x2a3441),
+    shininess: 14,
+});
+const globe = new THREE.Mesh(new THREE.SphereGeometry(R, 128, 96), globeMat);
+scene.add(globe);
+
+// Soft outer atmosphere
+const atmoMat = new THREE.MeshBasicMaterial({
+    color: 0xe6a341, transparent: true, opacity: 0.05, side: THREE.BackSide, depthWrite: false
+});
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(R*1.035, 64, 48), atmoMat));
+
+// ---------- Graticule (lat/long grid) ----------
+(function graticule(){
+    const g = new THREE.Group();
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xece5d3, transparent: true, opacity: 0.07 });
+    const equatorMat = new THREE.LineBasicMaterial({ color: 0xe6a341, transparent: true, opacity: 0.22 });
+    const meridianMat = new THREE.LineBasicMaterial({ color: 0xe6a341, transparent: true, opacity: 0.18 });
+    const Rg = R * 1.0008;
+
+    // Parallels every 15°
+    for (let lat = -75; lat <= 75; lat += 15){
+        const phi = (90 - lat) * Math.PI / 180;
+        const radius = Rg * Math.sin(phi);
+        const y = Rg * Math.cos(phi);
+        const seg = 192;
+        const pts = [];
+        for (let i = 0; i <= seg; i++){
+            const t = (i/seg) * Math.PI * 2;
+            pts.push(new THREE.Vector3(Math.cos(t)*radius, y, Math.sin(t)*radius));
+        }
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        g.add(new THREE.Line(geo, lat === 0 ? equatorMat : lineMat));
+    }
+    // Meridians every 15°
+    for (let lng = 0; lng < 360; lng += 15){
+        const theta = lng * Math.PI / 180;
+        const seg = 96;
+        const pts = [];
+        for (let i = 0; i <= seg; i++){
+            const phi = (i/seg) * Math.PI;
+            pts.push(new THREE.Vector3(
+                Rg * Math.sin(phi) * Math.cos(theta),
+                Rg * Math.cos(phi),
+                Rg * Math.sin(phi) * Math.sin(theta),
+            ));
+        }
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        g.add(new THREE.Line(geo, (lng % 90 === 0) ? meridianMat : lineMat));
+    }
+    scene.add(g);
+})();
+
+// ---------- Geometry helpers ----------
+// Three.js sphere UVs: longitude 0 lies at -Z direction with default geometry.
+// To match the equirectangular Earth texture (which centers Atlantic Ocean), we use this convention:
+function latLngToVec3(lat, lng, r = R){
+    const phi = (90 - lat) * Math.PI / 180;
+    const theta = (lng + 180) * Math.PI / 180;
+    return new THREE.Vector3(
+        -r * Math.sin(phi) * Math.cos(theta),
+         r * Math.cos(phi),
+         r * Math.sin(phi) * Math.sin(theta)
+    );
+}
+function vec3ToLatLng(v){
+    const r = v.length();
+    const phi = Math.acos(THREE.MathUtils.clamp(v.y / r, -1, 1));
+    const theta = Math.atan2(v.z, -v.x);
+    const lat = 90 - phi * 180 / Math.PI;
+    let lng = theta * 180 / Math.PI - 180;
+    while (lng < -180) lng += 360;
+    while (lng >  180) lng -= 360;
+    return [lat, lng];
+}
+function circleOnSphere(centerLat, centerLng, radiusKm, segments = 128){
+    const ang = Math.min(radiusKm / EARTH_KM, Math.PI - 0.001);
+    const lat1 = centerLat * Math.PI / 180;
+    const lng1 = centerLng * Math.PI / 180;
+    const pts = [];
+    for (let i = 0; i <= segments; i++){
+        const brng = (i / segments) * Math.PI * 2;
+        const lat2 = Math.asin(Math.sin(lat1)*Math.cos(ang) + Math.cos(lat1)*Math.sin(ang)*Math.cos(brng));
+        const lng2 = lng1 + Math.atan2(
+            Math.sin(brng)*Math.sin(ang)*Math.cos(lat1),
+            Math.cos(ang) - Math.sin(lat1)*Math.sin(lat2)
+        );
+        pts.push(latLngToVec3(lat2 * 180 / Math.PI, lng2 * 180 / Math.PI, R * 1.0035));
+    }
+    return pts;
+}
+
+// ---------- Groups ----------
+const pinGroup = new THREE.Group();
+const markerGroup = new THREE.Group();
+scene.add(pinGroup);
+scene.add(markerGroup);
+
+// ---------- Property pin ----------
+function createPin(p){
+    const group = new THREE.Group();
+    const [lat, lng] = p.location;
+    const base = latLngToVec3(lat, lng, R);
+    const tip = latLngToVec3(lat, lng, R * 1.085);
+
+    // leader stalk
+    const stalkGeo = new THREE.BufferGeometry().setFromPoints([base.clone(), tip.clone()]);
+    const stalkMat = new THREE.LineBasicMaterial({ color: 0xe6a341, transparent:true, opacity:.85 });
+    group.add(new THREE.Line(stalkGeo, stalkMat));
+
+    // ring head
+    const headGeo = new THREE.TorusGeometry(0.022, 0.005, 12, 28);
+    const headMat = new THREE.MeshBasicMaterial({ color: 0xe6a341 });
+    const head = new THREE.Mesh(headGeo, headMat);
+    head.position.copy(tip);
+    head.lookAt(0,0,0);
+    head.userData = { type:'property', id:p._id };
+    group.add(head);
+
+    // inner dot (hit target — slightly bigger transparent disk)
+    const dotGeo = new THREE.SphereGeometry(0.026, 12, 12);
+    const dotMat = new THREE.MeshBasicMaterial({ color: 0xe6a341, transparent:true, opacity:0.0001, depthWrite:false });
+    const dot = new THREE.Mesh(dotGeo, dotMat);
+    dot.position.copy(tip);
+    dot.userData = { type:'property', id:p._id };
+    group.add(dot);
+
+    // foot dot on surface
+    const footGeo = new THREE.SphereGeometry(0.005, 8, 8);
+    const footMat = new THREE.MeshBasicMaterial({ color: 0xe6a341 });
+    const foot = new THREE.Mesh(footGeo, footMat);
+    foot.position.copy(base);
+    group.add(foot);
+
+    return group;
+}
+function rebuildPins(){
+    while (pinGroup.children.length) pinGroup.remove(pinGroup.children[0]);
+    state.properties.forEach(p => pinGroup.add(createPin(p)));
+    document.getElementById('cnt-props').textContent = state.properties.length;
+}
+
+// ---------- Radius marker ----------
+function createMarker(m){
+    const group = new THREE.Group();
+    const [lat, lng] = m.center;
+    const pts = circleOnSphere(lat, lng, m.radiusKm);
+
+    // dashed circle line
+    const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+    const lineMat = new THREE.LineDashedMaterial({
+        color: 0x4cb8a6, dashSize: 0.03, gapSize: 0.015, transparent:true, opacity:0.9
+    });
+    const line = new THREE.LineLoop(lineGeo, lineMat);
+    line.computeLineDistances();
+    group.add(line);
+
+    // translucent filled cap (triangle fan from center)
+    const center = latLngToVec3(lat, lng, R * 1.003);
+    const verts = [center.x, center.y, center.z];
+    for (const p of pts) verts.push(p.x, p.y, p.z);
+    const idx = [];
+    for (let i = 1; i < pts.length; i++) idx.push(0, i, i+1);
+    const fanGeo = new THREE.BufferGeometry();
+    fanGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+    fanGeo.setIndex(idx);
+    fanGeo.computeVertexNormals();
+    const fan = new THREE.Mesh(fanGeo, new THREE.MeshBasicMaterial({
+        color: 0x4cb8a6, transparent:true, opacity:0.10, side:THREE.DoubleSide, depthWrite:false
+    }));
+    group.add(fan);
+
+    // center marker — small ring + dot, raised slightly
+    const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.018, 0.003, 10, 24),
+        new THREE.MeshBasicMaterial({ color: 0x4cb8a6 })
+    );
+    const ringPos = latLngToVec3(lat, lng, R*1.018);
+    ring.position.copy(ringPos);
+    ring.lookAt(0,0,0);
+    ring.userData = { type:'marker', id:m._id };
+    group.add(ring);
+
+    const dot = new THREE.Mesh(
+        new THREE.SphereGeometry(0.012, 10, 10),
+        new THREE.MeshBasicMaterial({ color: 0x4cb8a6 })
+    );
+    dot.position.copy(ringPos);
+    dot.userData = { type:'marker', id:m._id };
+    group.add(dot);
+
+    // larger invisible click target on center
+    const hit = new THREE.Mesh(
+        new THREE.SphereGeometry(0.04, 12, 12),
+        new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:0.0001, depthWrite:false })
+    );
+    hit.position.copy(ringPos);
+    hit.userData = { type:'marker', id:m._id };
+    group.add(hit);
+
+    return group;
+}
+function rebuildMarkers(){
+    while (markerGroup.children.length) markerGroup.remove(markerGroup.children[0]);
+    state.markers.forEach(m => markerGroup.add(createMarker(m)));
+    document.getElementById('cnt-markers').textContent = state.markers.length;
+    syncMarkerLabels();
+}
+
+// ---------- Picking ----------
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+function pickAt(clientX, clientY){
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+
+    const objs = [];
+    pinGroup.traverse(o => { if (o.isMesh && o.userData?.type) objs.push(o); });
+    markerGroup.traverse(o => { if (o.isMesh && o.userData?.type === 'marker') objs.push(o); });
+
+    const hits = raycaster.intersectObjects(objs, false);
+    if (hits.length) return { kind:'object', ud: hits[0].object.userData, point: hits[0].point };
+    const gh = raycaster.intersectObject(globe, false);
+    if (gh.length) return { kind:'globe', point: gh[0].point };
+    return null;
+}
+// Globe-only raycast — used while dragging a marker so its own meshes don't block the ray
+function pickGlobeAt(clientX, clientY){
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObject(globe, false);
+    return hits.length ? hits[0].point : null;
+}
+
+// ---------- Marker labels (on-globe HTML overlays) ----------
+const labelsContainer = document.getElementById('marker-labels');
+const labelEls = new Map();
+function syncMarkerLabels(){
+    const want = new Set(state.markers.map(m => m._id));
+    for (const [id, el] of labelEls){
+        if (!want.has(id)){ el.remove(); labelEls.delete(id); }
+    }
+    for (const m of state.markers){
+        if (labelEls.has(m._id)) continue;
+        const el = document.createElement('div');
+        el.className = 'marker-label';
+        el.dataset.id = m._id;
+        el.innerHTML = `<span class="coord"></span><span class="sep">·</span><span class="r"></span>`;
+        labelsContainer.appendChild(el);
+        labelEls.set(m._id, el);
+    }
+}
+const _v = new THREE.Vector3();
+const _cam = new THREE.Vector3();
+function updateMarkerLabels(){
+    if (labelEls.size === 0) return;
+    camera.getWorldPosition(_cam);
+    const w = window.innerWidth, h = window.innerHeight;
+    for (const m of state.markers){
+        const el = labelEls.get(m._id);
+        if (!el) continue;
+        const [lat, lng] = m.center;
+        _v.copy(latLngToVec3(lat, lng, R * 1.02));
+        // backface: hide when the point is on the far side of the sphere
+        const toCam = _cam.clone().sub(_v).normalize();
+        const normal = _v.clone().normalize();
+        if (toCam.dot(normal) < 0.05){ el.classList.add('behind'); continue; }
+        el.classList.remove('behind');
+        const proj = _v.clone().project(camera);
+        const x = (proj.x + 1) * 0.5 * w;
+        const y = (1 - proj.y) * 0.5 * h;
+        el.style.left = x + 'px';
+        el.style.top  = y + 'px';
+        el.querySelector('.coord').textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        el.querySelector('.r').textContent     = `${m.radiusKm.toLocaleString()} km`;
+    }
+}
+
+// ---------- UI ----------
+const $ = id => document.getElementById(id);
+const canvasEl = canvas;
+const hint = $('hint');
+const hintText = $('hint-text');
+const coords = $('coords');
+const propForm = $('property-form');
+const markerForm = $('marker-form');
+const propDetails = $('property-details');
+const markerPopup = $('marker-popup');
+
+function setMode(mode, msg){
+    state.mode = mode;
+    $('btn-add-property').classList.toggle('active', mode === 'add-property');
+    $('btn-add-marker').classList.toggle('active', mode === 'add-marker');
+    if (mode){
+        hint.classList.remove('hidden');
+        hintText.textContent = msg;
+        canvasEl.classList.add('placing');
+    } else {
+        hint.classList.add('hidden');
+        canvasEl.classList.remove('placing');
+    }
+}
+
+$('btn-add-property').addEventListener('click', () => {
+    if (state.mode === 'add-property'){ setMode(null); return; }
+    hidePopups();
+    setMode('add-property', 'Click a point on the globe to mark a property');
+});
+$('btn-add-marker').addEventListener('click', () => {
+    if (state.mode === 'add-marker'){ setMode(null); return; }
+    hidePopups();
+    setMode('add-marker', 'Click a point on the globe to set the marker center');
+});
+$('btn-upload').addEventListener('click', () => $('file-input').click());
+$('file-input').addEventListener('change', async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try{
+        const data = JSON.parse(await f.text());
+        if (!Array.isArray(data)) throw new Error('Root must be an array of Property');
+        for (const p of data){
+            if (!Array.isArray(p.location) || p.location.length !== 2)
+                throw new Error('Each property requires location:[lat,lng]');
+        }
+        state.properties = data.map(p => ({ ...p, _id: ++state.pid }));
+        rebuildPins();
+        hidePopups();
+    } catch(err){
+        alert('Could not load JSON · ' + err.message);
+    }
+    e.target.value = '';
+});
+$('btn-export').addEventListener('click', () => {
+    const out = state.properties.map(({ _id, ...rest }) => rest);
+    const blob = new Blob([JSON.stringify(out, null, 2)], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `atlas-survey-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+});
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape'){ setMode(null); hidePopups(); closeModals(); return; }
+    if (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+    if (e.key === 'p' || e.key === 'P') $('btn-add-property').click();
+    else if (e.key === 'r' || e.key === 'R') $('btn-add-marker').click();
+    else if (e.key === 'u' || e.key === 'U') $('btn-upload').click();
+    else if (e.key === 'e' || e.key === 'E') $('btn-export').click();
+});
+
+function closeModals(){
+    propForm.classList.add('hidden');
+    markerForm.classList.add('hidden');
+    state.pendingLocation = null;
+}
+function hidePopups(){
+    propDetails.classList.add('hidden');
+    markerPopup.classList.add('hidden');
+}
+
+// ---------- Cursor coords + click + marker drag ----------
+const ptr = { downX:0, downY:0, downT:0, markerCandidate:null, dragging:false };
+
+// Capture-phase pointerdown: detect a marker hit and lock OrbitControls BEFORE its handlers run
+canvasEl.addEventListener('pointerdown', e => {
+    if (state.mode) return;
+    const r = pickAt(e.clientX, e.clientY);
+    if (r && r.kind === 'object' && r.ud.type === 'marker'){
+        ptr.markerCandidate = r.ud.id;
+        ptr.pointerId = e.pointerId;
+        controls.enabled = false; // will re-enable on pointerup
+        try { canvasEl.setPointerCapture(e.pointerId); } catch(_){}
+    }
+}, true);
+canvasEl.addEventListener('pointercancel', () => {
+    if (ptr.markerCandidate != null){
+        const el = labelEls.get(ptr.markerCandidate);
+        if (el) el.classList.remove('dragging');
+        controls.enabled = true;
+        canvasEl.style.cursor = '';
+        ptr.dragging = false;
+        ptr.markerCandidate = null;
+    }
+});
+
+canvasEl.addEventListener('pointerdown', e => {
+    ptr.downX = e.clientX; ptr.downY = e.clientY; ptr.downT = Date.now();
+});
+
+canvasEl.addEventListener('pointermove', e => {
+    // Drag in progress: move the marker center to the picked globe point
+    if (ptr.dragging && ptr.markerCandidate != null){
+        const p = pickGlobeAt(e.clientX, e.clientY);
+        if (p){
+            const [lat, lng] = vec3ToLatLng(p.clone().normalize().multiplyScalar(R));
+            const m = state.markers.find(mm => mm._id === ptr.markerCandidate);
+            if (m){
+                m.center = [lat, lng];
+                rebuildMarkers();
+                const el = labelEls.get(m._id);
+                if (el) el.classList.add('dragging');
+            }
+        }
+        coords.classList.remove('visible');
+        return;
+    }
+
+    // Promote a pending marker-down into a drag once moved enough
+    if (ptr.markerCandidate != null && !ptr.dragging){
+        const moved = Math.hypot(e.clientX - ptr.downX, e.clientY - ptr.downY);
+        if (moved > 4){
+            ptr.dragging = true;
+            hidePopups();
+            canvasEl.style.cursor = 'grabbing';
+            const el = labelEls.get(ptr.markerCandidate);
+            if (el) el.classList.add('dragging');
+            return;
+        }
+    }
+
+    // Hover cursor + cursor coord readout
+    const r = pickAt(e.clientX, e.clientY);
+    if (r && r.kind === 'object' && r.ud.type === 'marker'){
+        canvasEl.style.cursor = 'move';
+    } else if (!state.mode){
+        canvasEl.style.cursor = '';
+    }
+    if (r && r.kind === 'globe'){
+        const [lat, lng] = vec3ToLatLng(r.point.clone().normalize().multiplyScalar(R));
+        coords.textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        coords.style.left = e.clientX + 'px';
+        coords.style.top  = e.clientY + 'px';
+        coords.classList.add('visible');
+    } else {
+        coords.classList.remove('visible');
+    }
+});
+canvasEl.addEventListener('pointerleave', () => coords.classList.remove('visible'));
+canvasEl.addEventListener('pointerup', e => {
+    // End drag — eat the pointerup so it isn't treated as a click
+    if (ptr.dragging){
+        const el = labelEls.get(ptr.markerCandidate);
+        if (el) el.classList.remove('dragging');
+        ptr.dragging = false;
+        ptr.markerCandidate = null;
+        controls.enabled = true;
+        canvasEl.style.cursor = '';
+        return;
+    }
+    if (ptr.markerCandidate != null){
+        controls.enabled = true;
+        ptr.markerCandidate = null;
+    }
+    const moved = Math.hypot(e.clientX - ptr.downX, e.clientY - ptr.downY);
+    const dt = Date.now() - ptr.downT;
+    if (moved > 5 || dt > 350) return; // drag/long-press → not a click
+    handleClick(e.clientX, e.clientY);
+});
+
+function handleClick(x, y){
+    const r = pickAt(x, y);
+    if (state.mode === 'add-property'){
+        if (r && r.kind === 'globe'){
+            const [lat, lng] = vec3ToLatLng(r.point.clone().normalize().multiplyScalar(R));
+            state.pendingLocation = [lat, lng];
+            setMode(null);
+            openPropertyForm();
+        }
+        return;
+    }
+    if (state.mode === 'add-marker'){
+        if (r && r.kind === 'globe'){
+            const [lat, lng] = vec3ToLatLng(r.point.clone().normalize().multiplyScalar(R));
+            state.pendingLocation = [lat, lng];
+            setMode(null);
+            openMarkerForm();
+        }
+        return;
+    }
+    if (r && r.kind === 'object'){
+        if (r.ud.type === 'property'){ showPropertyDetails(r.ud.id, x, y); return; }
+        if (r.ud.type === 'marker'){ showMarkerPopup(r.ud.id, x, y); return; }
+    }
+    hidePopups();
+}
+
+// ---------- Property form ----------
+function openPropertyForm(){
+    const [lat, lng] = state.pendingLocation;
+    $('prop-lat').textContent = lat.toFixed(4);
+    $('prop-lng').textContent = lng.toFixed(4);
+    const ammCont = $('f-ammenities');
+    ammCont.querySelectorAll('[data-custom="1"]').forEach(n => n.remove());
+    ammCont.querySelectorAll('input[type=checkbox]').forEach(c => c.checked = false);
+    $('f-sqft').value = 1200; $('f-price').value = 250000;
+    $('f-rooms').value = 3; $('f-baths').value = 2;
+    $('f-lighting').value = 'medium'; $('f-desc').value = '';
+    $('amm-new').value = '';
+    propForm.classList.remove('hidden');
+}
+$('prop-cancel').addEventListener('click', closeModals);
+$('amm-add-btn').addEventListener('click', () => {
+    const inp = $('amm-new'); const name = inp.value.trim();
+    if (!name) return;
+    const ammCont = $('f-ammenities');
+    const label = document.createElement('label');
+    label.dataset.custom = '1';
+    label.innerHTML = `<input type="checkbox" data-amm="${escapeAttr(name)}" checked /> ${escapeHTML(name)}`;
+    ammCont.appendChild(label);
+    inp.value = '';
+});
+$('amm-new').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); $('amm-add-btn').click(); } });
+$('prop-save').addEventListener('click', () => {
+    if (!state.pendingLocation) return;
+    const ammenities = {};
+    document.querySelectorAll('#f-ammenities input[type=checkbox]').forEach(c => { ammenities[c.dataset.amm] = c.checked; });
+    const prop = {
+        squareFootage: num($('f-sqft').value),
+        lighting: $('f-lighting').value,
+        price: num($('f-price').value),
+        rooms: num($('f-rooms').value),
+        bathrooms: num($('f-baths').value),
+        location: state.pendingLocation,
+        description: $('f-desc').value.trim(),
+        ammenities,
+        _id: ++state.pid,
+    };
+    state.properties.push(prop);
+    rebuildPins();
+    closeModals();
+});
+
+// ---------- Marker form ----------
+function openMarkerForm(){
+    const [lat, lng] = state.pendingLocation;
+    $('m-lat').textContent = lat.toFixed(4);
+    $('m-lng').textContent = lng.toFixed(4);
+    $('m-radius').value = 250;
+    markerForm.classList.remove('hidden');
+}
+$('marker-cancel').addEventListener('click', closeModals);
+$('marker-save').addEventListener('click', () => {
+    if (!state.pendingLocation) return;
+    const rkm = Math.max(1, num($('m-radius').value) || 250);
+    state.markers.push({ _id: ++state.mid, center: state.pendingLocation, radiusKm: rkm });
+    rebuildMarkers();
+    closeModals();
+});
+
+// ---------- Popups ----------
+function placePopup(el, x, y){
+    el.classList.remove('hidden');
+    const r = el.getBoundingClientRect();
+    let px = x + 16, py = y + 16;
+    if (px + r.width  > window.innerWidth  - 12) px = x - r.width  - 16;
+    if (py + r.height > window.innerHeight - 12) py = y - r.height - 16;
+    el.style.left = Math.max(12, px) + 'px';
+    el.style.top  = Math.max(12, py) + 'px';
+}
+function showPropertyDetails(id, x, y){
+    const p = state.properties.find(q => q._id === id); if (!p) return;
+    $('prop-id').textContent = 'P-' + String(id).padStart(4,'0');
+    const active = Object.entries(p.ammenities || {}).filter(([,v]) => v).map(([k]) => k);
+    const ammHTML = active.length
+        ? `<div class="amm">${active.map(a => `<span>${escapeHTML(a)}</span>`).join('')}</div>` : '';
+    $('prop-body').innerHTML = `
+        <div class="field"><span class="k">Price</span><span class="v">$${Number(p.price).toLocaleString()}</span></div>
+        <div class="field"><span class="k">Square ft</span><span class="v">${Number(p.squareFootage).toLocaleString()}</span></div>
+        <div class="field"><span class="k">Rooms</span><span class="v">${p.rooms}</span></div>
+        <div class="field"><span class="k">Bathrooms</span><span class="v">${p.bathrooms}</span></div>
+        <div class="field"><span class="k">Lighting</span><span class="v">${escapeHTML(p.lighting)}</span></div>
+        <div class="field"><span class="k">Lat / Lng</span><span class="v">${p.location[0].toFixed(4)}, ${p.location[1].toFixed(4)}</span></div>
+        ${p.description ? `<div class="desc">"${escapeHTML(p.description)}"</div>` : ''}
+        ${ammHTML}
+    `;
+    placePopup(propDetails, x, y);
+    markerPopup.classList.add('hidden');
+}
+function showMarkerPopup(id, x, y){
+    const m = state.markers.find(q => q._id === id); if (!m) return;
+    $('mk-id').textContent = 'M-' + String(id).padStart(4,'0');
+    $('mk-radius').textContent = m.radiusKm.toLocaleString() + ' km';
+    $('mk-center').textContent = `${m.center[0].toFixed(4)}, ${m.center[1].toFixed(4)}`;
+    const cap = capArea(m.radiusKm);
+    $('mk-area').textContent = cap.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' km²';
+    $('marker-delete-btn').onclick = () => {
+        state.markers = state.markers.filter(mm => mm._id !== id);
+        rebuildMarkers();
+        markerPopup.classList.add('hidden');
+    };
+    placePopup(markerPopup, x, y);
+    propDetails.classList.add('hidden');
+}
+
+// ---------- Formatters ----------
+function capArea(rKm){
+    // spherical cap area: 2 π R h, with h = R(1 - cos(r/R))
+    const ang = Math.min(rKm / EARTH_KM, Math.PI);
+    return 2 * Math.PI * EARTH_KM * EARTH_KM * (1 - Math.cos(ang));
+}
+function num(v){ const n = Number(v); return Number.isFinite(n) ? n : 0; }
+function escapeHTML(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHTML(s).replace(/`/g,'&#96;'); }
+
+// ---------- Tick marks ----------
+(function ticks(){
+    const top = $('ticks-top'), bot = $('ticks-bottom');
+    for (let i = 0; i < 41; i++){
+        top.appendChild(document.createElement('span'));
+        bot.appendChild(document.createElement('span'));
+    }
+})();
+
+// Clock
+function tick(){
+    const d = new Date();
+    $('tb-time').textContent = d.toISOString().substr(11, 8) + 'Z';
+}
+tick(); setInterval(tick, 1000);
+
+// ---------- Resize ----------
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ---------- Animate ----------
+function animate(){
+    requestAnimationFrame(animate);
+    controls.update();
+    updateMarkerLabels();
+    renderer.render(scene, camera);
+}
+animate();
+
+// ---------- Seed sample data on first load (deletable) ----------
+state.properties = [
+    { _id:++state.pid, squareFootage:1850, lighting:'high', price:780000, rooms:4, bathrooms:2, location:[40.7128, -74.0060], description:'Brownstone walk-up, garden floor.', ammenities:{ yard:true, garage:false, pool:false } },
+    { _id:++state.pid, squareFootage:760,  lighting:'medium', price:215000, rooms:2, bathrooms:1, location:[-34.6037, -58.3816], description:'Belgrano apartment, sunny mornings.', ammenities:{ balcony:true, parking:true } },
+    { _id:++state.pid, squareFootage:1200, lighting:'low',  price:540000, rooms:3, bathrooms:2, location:[35.6762, 139.6503], description:'Shimokitazawa townhome.', ammenities:{ yard:false, garage:false } },
+];
+rebuildPins();
+</script>
+</body>
+</html>
