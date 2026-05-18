@@ -229,13 +229,15 @@ body::after{
 
 .modal-foot{
     padding:18px 26px 22px;border-top:1px solid var(--line);margin-top:18px;
-    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    flex-wrap:wrap;
 }
 .coord-readout{
     font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;color:var(--bone-muted);
+    min-width:0;
 }
 .coord-readout b{color:var(--amber);font-weight:500;margin:0 4px}
-.actions{display:flex;gap:10px}
+.actions{display:flex;gap:10px;flex-shrink:0}
 .btn{
     appearance:none;border:1px solid var(--line-strong);background:transparent;color:var(--bone);
     padding:9px 22px;cursor:pointer;
