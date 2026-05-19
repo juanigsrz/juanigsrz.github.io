@@ -167,8 +167,9 @@ body::after{
 }
 .modal{
     background:var(--ink-2);border:1px solid var(--line-strong);
-    width:520px;max-width:92vw;max-height:88vh;overflow-y:auto;
+    width:520px;max-width:92vw;max-height:88vh;
     position:relative;
+    display:flex;flex-direction:column;
 }
 .modal::before,.modal::after{
     content:"";position:absolute;width:14px;height:14px;border-color:var(--amber);
@@ -178,6 +179,7 @@ body::after{
 .modal-head{
     padding:20px 26px 16px;border-bottom:1px solid var(--line);
     display:flex;justify-content:space-between;align-items:baseline;
+    flex-shrink:0;
 }
 .modal-head h2{
     font-family:"Instrument Serif",serif;font-weight:400;font-size:26px;line-height:1;
@@ -187,7 +189,7 @@ body::after{
     font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.28em;text-transform:uppercase;
     color:var(--bone-muted);
 }
-.modal-body{padding:20px 26px 6px}
+.modal-body{padding:20px 26px 6px;overflow-y:auto;flex:1 1 auto;min-height:0}
 .modal label{
     display:block;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.22em;
     text-transform:uppercase;color:var(--bone-muted);margin:14px 0 6px;
@@ -228,9 +230,9 @@ body::after{
 .amm-add button:hover{background:var(--amber);color:var(--ink)}
 
 .modal-foot{
-    padding:18px 26px 22px;border-top:1px solid var(--line);margin-top:18px;
+    padding:18px 26px 22px;border-top:1px solid var(--line);
     display:flex;justify-content:space-between;align-items:center;gap:12px;
-    flex-wrap:wrap;
+    flex-wrap:wrap;flex-shrink:0;
 }
 .coord-readout{
     font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;color:var(--bone-muted);
