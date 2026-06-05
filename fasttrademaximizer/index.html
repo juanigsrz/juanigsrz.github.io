@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FastTradeMaximizer</title>
+<style>
+  :root {
+    --bg: #14161a; --panel: #1b1e24; --inset: #101216; --border: #2a2e37; --border-hi: #38404e;
+    --text: #d7dbe2; --muted: #888f9d; --accent: #6ea8fe; --err: #e87a7a; --ok: #6fcf97;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --ring: 0 0 0 3px rgba(110,168,254,.16);
+  }
+  * { box-sizing: border-box; }
+  ::selection { background: rgba(110,168,254,.28); }
+  body {
+    margin: 0; color: var(--text);
+    font: 14px/1.55 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background:
+      radial-gradient(1000px 460px at 50% -180px, rgba(110,168,254,.05), transparent 70%),
+      var(--bg);
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 44px 20px 64px; }
+  header { margin-bottom: 4px; }
+  h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+  .sub { color: var(--muted); margin: 6px 0 0; font-size: 13px; }
+  .sub a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+  .sub a:hover { border-color: currentColor; }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 9px;
+    padding: 17px; margin-top: 14px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.02) inset, 0 10px 26px -22px rgba(0,0,0,.8);
+  }
+  label { display: block; font-size: 11.5px; letter-spacing: .03em; color: var(--muted); margin: 0 0 7px; }
+  input[type=text], textarea {
+    width: 100%; background: var(--inset); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px 12px; font-family: var(--mono); font-size: 13px;
+    transition: border-color .14s ease, box-shadow .14s ease, background .14s ease;
+  }
+  input[type=text]::placeholder, textarea::placeholder { color: #4f5667; }
+  input[type=text]:hover, textarea:hover { border-color: var(--border-hi); }
+  input[type=text]:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
+  textarea { min-height: 230px; resize: vertical; white-space: pre; overflow-wrap: normal; tab-size: 4; line-height: 1.5; }
+
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .grow { flex: 1 1 auto; }
+
+  input[type=file] { font: inherit; font-size: 12.5px; color: var(--muted); max-width: 100%; }
+  input[type=file]::file-selector-button {
+    font: inherit; font-size: 12.5px; margin-right: 10px; cursor: pointer;
+    background: var(--inset); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 7px 12px; transition: border-color .14s ease;
+  }
+  input[type=file]::file-selector-button:hover { border-color: var(--border-hi); }
+
+  button {
+    font: inherit; font-size: 13px; font-weight: 500; border-radius: 6px; cursor: pointer;
+    padding: 9px 17px; border: 1px solid transparent; background: var(--accent); color: #0c1118;
+    transition: filter .14s ease, transform .06s ease, border-color .14s ease, box-shadow .14s ease;
+  }
+  button:hover { filter: brightness(1.07); }
+  button:active { transform: translateY(1px); }
+  button:focus-visible { outline: none; box-shadow: var(--ring); }
+  button:disabled { opacity: .5; cursor: default; transform: none; filter: none; }
+  button.ghost { background: transparent; border-color: var(--border); color: var(--text); }
+  button.ghost:hover { border-color: var(--border-hi); filter: none; }
+
+  .status { font-size: 12.5px; min-height: 18px; margin: 13px 0 0; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+  .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: 0 0 auto; opacity: .85; }
+  .status:empty::before { display: none; }
+  .status.ok  { color: var(--ok); }
+  .status.err { color: var(--err); }
+
+  pre {
+    background: var(--inset); border: 1px solid var(--border); border-radius: 6px; padding: 14px;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.5; overflow: auto; max-height: 60vh;
+    margin: 0; white-space: pre; tab-size: 4; color: #cfd4dd;
+  }
+  pre::-webkit-scrollbar { width: 10px; height: 10px; }
+  pre::-webkit-scrollbar-thumb { background: var(--border); border-radius: 7px; border: 2px solid var(--inset); }
+  pre::-webkit-scrollbar-thumb:hover { background: var(--border-hi); }
+  pre::-webkit-scrollbar-track { background: transparent; }
+
+  details { margin-top: 12px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 12px; list-style: none; width: fit-content; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "▸"; display: inline-block; margin-right: 6px; font-size: 10px; transition: transform .14s ease; }
+  details[open] summary::before { transform: rotate(90deg); }
+  summary:hover { color: var(--text); }
+
+  .hint { color: var(--muted); font-size: 12px; margin: 9px 0 0; }
+  .hint code { color: var(--text); background: rgba(255,255,255,.05); padding: 1px 6px; border-radius: 4px; font-size: 11.5px; }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>FastTradeMaximizer</h1>
+    <p class="sub">Upload or paste a wants file, solve a math trade.
+      <a href="https://github.com/juanigsrz/FastTradeMaximizer" target="_blank" rel="noopener">Source</a></p>
+  </header>
+
+  <div class="panel">
+    <label for="endpoint">Modal endpoint</label>
+    <input id="endpoint" type="text" spellcheck="false"
+           placeholder="https://workspace--fasttrademaximizer-web.modal.run" />
+  </div>
+
+  <div class="panel">
+    <div class="row" style="margin-bottom:10px;">
+      <input id="file" type="file" accept=".txt,text/plain" />
+      <span class="grow"></span>
+      <button id="solve">Solve</button>
+    </div>
+    <label for="wants">Wants file</label>
+    <textarea id="wants" spellcheck="false" placeholder="#! ALLOW-DUMMIES REQUIRE-COLONS&#10;(user) ITEM : WANT1 WANT2 ..."></textarea>
+    <p id="status" class="status"></p>
+  </div>
+
+  <div class="panel" id="resultPanel" style="display:none;">
+    <div class="row" style="margin-bottom:10px;">
+      <label style="margin:0;">Result</label>
+      <span class="grow"></span>
+      <button class="ghost" id="copy">Copy</button>
+      <button class="ghost" id="download">Download</button>
+    </div>
+    <pre id="output"></pre>
+    <details id="logBox">
+      <summary>Solver log</summary>
+      <pre id="log" style="margin-top:8px; max-height:30vh;"></pre>
+    </details>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const KEY = "ftm.endpoint";
+
+  // Optionally hardcode after deploy; otherwise paste in the field above.
+  const MODAL_URL = "https://juanigsrz--fasttrademaximizer-web.modal.run";
+
+  $("endpoint").value = localStorage.getItem(KEY) || MODAL_URL;
+  $("endpoint").addEventListener("change", e => localStorage.setItem(KEY, e.target.value.trim()));
+
+  $("file").addEventListener("change", async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    $("wants").value = await f.text();
+    setStatus(`Loaded ${f.name} (${f.size.toLocaleString()} bytes).`, "ok");
+  });
+
+  function setStatus(msg, cls) { const s = $("status"); s.textContent = msg; s.className = "status " + (cls || ""); }
+
+  function endpoint() {
+    let u = ($("endpoint").value || "").trim().replace(/\/+$/, "");
+    return u ? u + "/solve" : "";
+  }
+
+  $("solve").addEventListener("click", async () => {
+    const url = endpoint();
+    const text = $("wants").value;
+    if (!url) return setStatus("Set the Modal endpoint URL first.", "err");
+    if (!text.trim()) return setStatus("Nothing to solve -- paste or upload a wants file.", "err");
+
+    $("solve").disabled = true;
+    setStatus("Solving...", "");
+    const t0 = performance.now();
+    try {
+      const res = await fetch(url, { method: "POST", headers: { "Content-Type": "text/plain" }, body: text });
+      const wall = Math.round(performance.now() - t0);
+      let data;
+      const raw = await res.text();
+      try { data = JSON.parse(raw); } catch { data = null; }
+
+      if (!res.ok) {
+        const d = data && data.detail;
+        const msg = d && d.error ? d.error : (typeof d === "string" ? d : `HTTP ${res.status}`);
+        $("log").textContent = (d && d.log) || raw;
+        const showPanel = !!(d && d.log);
+        $("resultPanel").style.display = showPanel ? "block" : "none";
+        if (showPanel) $("logBox").open = true;
+        $("output").textContent = "";
+        return setStatus("Error: " + msg, "err");
+      }
+
+      $("output").textContent = data.output || "(empty)";
+      $("log").textContent = data.log || "";
+      $("resultPanel").style.display = "block";
+      setStatus(`Done in ${data.ms} ms (solver) / ${wall} ms (round-trip).`, "ok");
+    } catch (err) {
+      setStatus("Request failed: " + err.message + " (check the endpoint URL / CORS).", "err");
+    } finally {
+      $("solve").disabled = false;
+    }
+  });
+
+  $("copy").addEventListener("click", () => navigator.clipboard.writeText($("output").textContent));
+  $("download").addEventListener("click", () => {
+    const blob = new Blob([$("output").textContent], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "results.txt"; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+</script>
+</body>
+</html>
