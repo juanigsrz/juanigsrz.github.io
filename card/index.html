@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>juanigsrz · business card</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html, body { margin:0; height:100%; background:#0d0d0f; color:#e8e6e3; overflow:hidden;
+    font: 13px/1.4 ui-sans-serif, system-ui, "Segoe UI", sans-serif; }
+  canvas { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+  .ui { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); display:flex; gap:8px; align-items:center; }
+  .hint { position:fixed; top:14px; left:0; right:0; text-align:center; color:#8d8a86; pointer-events:none; }
+  button { background:#1d1d21; color:inherit; border:1px solid #34343a; border-radius:6px; padding:7px 14px; font:inherit; cursor:pointer; }
+  button:hover { border-color:#d9b26a; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div class="hint">Drag to rotate · scroll to zoom · move the cursor to sweep the light over the gloss</div>
+<div class="ui"><button id="flip">Flip card</button><button id="reset">Reset view</button></div>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+const W = 90, H = 50, T = 0.42, TEX_W = 2048;     // card in mm
+const canvas = document.getElementById("gl");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d0d0f);
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.55;
+
+const camera = new THREE.PerspectiveCamera(30, 1, 1, 2000);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.minDistance = 40; controls.maxDistance = 600;
+function resetView() {
+  const t = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2), a = innerWidth / innerHeight;
+  const d = Math.max((H * 1.35 / 2) / t, (W * 1.25 / 2) / (t * a));
+  camera.position.set(0, -0.1 * d, d); controls.target.set(0, 0, 0); controls.update();
+}
+
+// lamp that follows the cursor
+const lamp = new THREE.PointLight(0xfff3e0, 9000, 0, 2);
+lamp.position.set(40, 40, 90);
+lamp.add(new THREE.Mesh(new THREE.SphereGeometry(1.2, 16, 8), new THREE.MeshBasicMaterial({ color: 0xfff3e0 })));
+scene.add(lamp, new THREE.HemisphereLight(0xffffff, 0x222222, 0.15));
+
+// ---- textures: art + spot UV mask (black = gloss varnish)
+const loadImage = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+function toCanvas(img) {
+  const c = document.createElement("canvas"); c.width = TEX_W; c.height = Math.round(TEX_W * H / W);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); return c;
+}
+function tex(c, srgb) {
+  const t = new THREE.CanvasTexture(c);
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t;
+}
+function blur(a, w, h, r) {                         // 2× separable box blur
+  let b = new Float32Array(a.length);
+  for (let p = 0; p < 2; p++) {
+    for (let y = 0; y < h; y++) { let s = 0; const o = y * w;
+      for (let x = -r; x <= r; x++) s += a[o + Math.min(w - 1, Math.max(0, x))];
+      for (let x = 0; x < w; x++) { b[o + x] = s / (2*r+1); s += a[o + Math.min(w - 1, x + r + 1)] - a[o + Math.max(0, x - r)]; } }
+    [a, b] = [b, a];
+    for (let x = 0; x < w; x++) { let s = 0;
+      for (let y = -r; y <= r; y++) s += a[Math.min(h - 1, Math.max(0, y)) * w + x];
+      for (let y = 0; y < h; y++) { b[y * w + x] = s / (2*r+1); s += a[Math.min(h - 1, y + r + 1) * w + x] - a[Math.max(0, y - r) * w + x]; } }
+    [a, b] = [b, a];
+  }
+  return a;
+}
+function maskMaps(img) {
+  const c = toCanvas(img), w = c.width, h = c.height;
+  const d = c.getContext("2d").getImageData(0, 0, w, h).data;
+  const L = new Float32Array(w * h);
+  for (let i = 0; i < L.length; i++) L[i] = 1 - d[4*i] / 255;
+  const hgt = blur(L, w, h, 2);
+  const mk = () => { const k = document.createElement("canvas"); k.width = w; k.height = h; const g = k.getContext("2d"); return [k, g, g.createImageData(w, h)]; };
+  const [rc, rg, ri] = mk(), [cc, cg, ci] = mk(), [nc, ng, ni] = mk();
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = y * w + x, v = L[i], q = 4 * i;
+    ri.data[q] = ri.data[q+1] = ri.data[q+2] = 255 * (0.92 - 0.62 * v);
+    ci.data[q] = ci.data[q+1] = ci.data[q+2] = 255 * v;
+    let nx = -(hgt[y*w + Math.min(w-1, x+1)] - hgt[y*w + Math.max(0, x-1)]);
+    let ny = hgt[Math.min(h-1, y+1)*w + x] - hgt[Math.max(0, y-1)*w + x], nz = 0.5;
+    const n = Math.hypot(nx, ny, nz);
+    ni.data[q] = 127.5 + 127.5 * nx / n; ni.data[q+1] = 127.5 + 127.5 * ny / n; ni.data[q+2] = 127.5 + 127.5 * nz / n;
+    ri.data[q+3] = ci.data[q+3] = ni.data[q+3] = 255;
+  }
+  rg.putImageData(ri, 0, 0); cg.putImageData(ci, 0, 0); ng.putImageData(ni, 0, 0);
+  return { roughnessMap: tex(rc), clearcoatMap: tex(cc), normalMap: tex(nc) };
+}
+async function face(art, mask) {
+  const [a, m] = await Promise.all([loadImage(art), loadImage(mask)]);
+  return new THREE.MeshPhysicalMaterial({ map: tex(toCanvas(a), true), ...maskMaps(m),
+    roughness: 1, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.07, normalScale: new THREE.Vector2(1.6, 1.6) });
+}
+
+const edge = new THREE.MeshStandardMaterial({ color: 0xf1eee8, roughness: 0.95 });
+const [front, back] = await Promise.all([face("front.jpg", "front_mask.png"), face("back.jpg", "back_mask.png")]);
+const card = new THREE.Mesh(new THREE.BoxGeometry(W, H, T), [edge, edge, edge, edge, front, back]);
+const pivot = new THREE.Group(); pivot.add(card); scene.add(pivot);
+
+// ---- interaction
+let flipTarget = 0;
+document.getElementById("flip").onclick = () => flipTarget += Math.PI;
+document.getElementById("reset").onclick = resetView;
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), lampTarget = lamp.position.clone();
+canvas.addEventListener("pointermove", e => {
+  ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const dir = camera.getWorldDirection(new THREE.Vector3());
+  ray.ray.intersectPlane(new THREE.Plane().setFromNormalAndCoplanarPoint(dir.clone().negate(), dir.clone().multiplyScalar(-55)), lampTarget);
+});
+function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+addEventListener("resize", resize); resize(); resetView();
+renderer.setAnimationLoop(() => {
+  pivot.rotation.y += (flipTarget - pivot.rotation.y) * 0.08;
+  lamp.position.lerp(lampTarget, 0.25);
+  controls.update();
+  renderer.render(scene, camera);
+});
+</script>
+</body>
+</html>
